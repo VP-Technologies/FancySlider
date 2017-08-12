@@ -2,22 +2,15 @@ package com.vptechnologies.vpfancyslider;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.support.annotation.ColorRes;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
-
-import android.content.Context;
-import android.content.res.TypedArray;
-import android.support.annotation.ColorRes;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.AttributeSet;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -29,19 +22,19 @@ import android.widget.TextView;
  */
 public class FancySlider extends RecyclerView {
 
-    private double smallTickPrecision;
-    private double largeTickPrecision;
-    private double minimumValue;
-    private double maximumValue;
-    private double initialValue;
+    private float smallTickPrecision;
+    private float largeTickPrecision;
+    private float minimumValue;
+    private float maximumValue;
+    private float initialValue;
+    private float smallTickHeight;
     private int tickDistance;
     private int tickColor;
+    private int progress;
     private boolean labeled;
 
-    private final float perc = 0.7f;
-
-
     private TickAdapter adapter;
+    private final FancySlider slider;
 
     public FancySlider(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -53,17 +46,30 @@ public class FancySlider extends RecyclerView {
         try {
             smallTickPrecision = a.getFloat(R.styleable.FancySlider_smallTickPrecision, 1);
             largeTickPrecision = a.getFloat(R.styleable.FancySlider_largeTickPrecision, 5);
-            minimumValue = a.getFloat(R.styleable.FancySlider_maximumValue, 0);
-            maximumValue = a.getFloat(R.styleable.FancySlider_minimumValue, 100);
+            minimumValue = a.getFloat(R.styleable.FancySlider_minimumValue, 1);
+            maximumValue = a.getFloat(R.styleable.FancySlider_maximumValue, 100);
             initialValue = a.getFloat(R.styleable.FancySlider_initialValue, 50);
-            tickDistance = a.getInteger(R.styleable.FancySlider_tickDistance, 24);
+            tickDistance = a.getInteger(R.styleable.FancySlider_tickDistance, 40);
+            smallTickHeight = a.getFloat(R.styleable.FancySlider_smallTickHeight, 0.7f);
             tickColor = a.getColor(R.styleable.FancySlider_tickColor, getResources().getColor(android.R.color.black));
             labeled = a.getBoolean(R.styleable.FancySlider_labeled, false);
         } finally {
             a.recycle();
         }
 
+        this.slider = this;
         setupSlider();
+    }
+
+    public void watchText(final TextView tv) {
+
+        this.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                tv.setText("" + getValue());
+            }
+        });
+
     }
 
     /**
@@ -79,49 +85,60 @@ public class FancySlider extends RecyclerView {
         this.setVerticalScrollBarEnabled(false);
         this.setHorizontalScrollBarEnabled(false);
 
+        // Update the progress of the slider
+        this.addOnScrollListener(new OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                progress += dx;
+            }
+        });
+
         // Load the adapter
-        this.adapter = new TickAdapter(this.smallTickPrecision,
-                this.largeTickPrecision,
-                this.minimumValue,
-                this.maximumValue,
-                this.tickDistance,
-                this.tickColor);
+        this.adapter = new TickAdapter();
         this.setAdapter(this.adapter);
         this.adapter.notifyDataSetChanged();
         invalidate();
         requestLayout();
 
+        // Scroll to the initial value
+        this.scrollToValue(initialValue, false);
+
     }
 
     /**
-     * Creates the adapter, using the given tick precision and max/min values
+     * Returns the number of pixels from the left edge of the slider to the center
+     * of the slider
+     * @return
      */
-    private void createSliderComponents() {
-        throw new RuntimeException("Not yet implemented.");
+    public int getCenterOffset() {
+        return this.getMeasuredWidth() / 2;
     }
 
     /**
      * Returns the value that is currently located at the center of the slider
      * @return the value that is currently located at the center of the slider
      */
-    public double getValue() {
-        throw new RuntimeException("Not yet implemented.");
+    public float getValue() {
+
+        // Now need to figure out which view the center of our screen is closest
+        return ((((progress + this.tickDistance / 2) / this.tickDistance)) * this.smallTickPrecision) + this.minimumValue;
     }
 
     /**
-     * Smoothly scrolls to the given value
+     * Scrolls to the given value, by either jumping or scrolling smoothly
      * @param value the value to scroll to
+     * @param smooth if true, then a smooth scroll to that value will occur
      */
-    public void scrollTo(double value) {
-        throw new RuntimeException("Not yet implemented.");
-    }
-
-    /**
-     * Jumps to the given value
-     * @param value the value to jump to
-     */
-    public void jumpTo(double value) {
-        throw new RuntimeException("Not yet implemented.");
+    public void scrollToValue(float value, boolean smooth) {
+        float valDiff = value - getValue();
+        float scrollByAbs = ((int) (valDiff / smallTickPrecision) * tickDistance);
+        float centerOffset = -(scrollByAbs + progress + tickDistance / 2) % this.smallTickPrecision;
+        int scrollAmount = (int) (scrollByAbs + centerOffset);
+        if (smooth) {
+            this.smoothScrollBy(scrollAmount, 0);
+        } else {
+            this.scrollBy(scrollAmount, 0);
+        }
     }
 
     public void attachValueChangedListener() {
@@ -129,25 +146,24 @@ public class FancySlider extends RecyclerView {
         throw new RuntimeException("Not yet implemented.");
     }
 
+    private int getOffsetFromValue(float value) {
+
+        // This is essentially the inverse of getValue()
+
+        return (int) ((value - minimumValue) * tickDistance / smallTickPrecision - (tickDistance / 2));
+
+    }
+
     /**
      * An adapter for providing the ticks and marks within the RecycleView
      */
     private class TickAdapter extends RecyclerView.Adapter<TickAdapter.ViewHolder> {
-        private double smallTickPrecision;
-        private double largeTickPrecision;
-        private double maxValue;
-        private double minValue;
-        private int tickColor;
-        private int tickDistance;
 
-        private final int LARGE_PADDING = 0;
-        private final int SMALL_PADDING = 50;
-
-        // Provide a reference to the views for each data item
-        // Complex data items may need more than one view per item, and
-        // you provide access to all the views for a data item in a view holder
+        /**
+         * Holds each tick or spacer within this FancySlider
+         */
         public class ViewHolder extends RecyclerView.ViewHolder {
-            // each data item is just a string in this case
+
             public TextView tickLabel;
             public FrameLayout tickLine;
             public LinearLayout container;
@@ -163,28 +179,20 @@ public class FancySlider extends RecyclerView {
         }
 
 
-        public TickAdapter(double smallTickPrecision, double largeTickPrecision,
-                           double minValue, double maxValue, int tickDistance,
-                           @ColorRes int tickColor) {
+        private TickAdapter() {
 
             // Assert that the desired ticks and ranges are valid
-            if (minValue > maxValue) {
-                double temp = minValue;
-                minValue = maxValue;
-                maxValue = temp;
+            if (minimumValue > maximumValue) {
+                float temp = minimumValue;
+                minimumValue = maximumValue;
+                maximumValue = temp;
             }
-            if ((maxValue - minValue) % smallTickPrecision != 0 ||
+            if ((maximumValue - minimumValue) % smallTickPrecision != 0 ||
                     largeTickPrecision % smallTickPrecision != 0 ||
-                    maxValue - minValue == 0) {
+                    maximumValue - minimumValue == 0) {
                 throw new RuntimeException("Range of values for FancySlider are not evenly divisible by the desired tick precisions");
             }
 
-            this.smallTickPrecision = smallTickPrecision;
-            this.largeTickPrecision = largeTickPrecision;
-            this.maxValue = maxValue;
-            this.minValue = minValue;
-            this.tickColor = tickColor;
-            this.tickDistance = tickDistance;
         }
 
         @Override
@@ -211,28 +219,31 @@ public class FancySlider extends RecyclerView {
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
 
-            //TODO: If this is the first or last position, make a gap
-            if (position == 0) {
+            if (position == 0 || position == getItemCount() - 1) {
 
-                holder.tickLabel.setText("START");
-
-            } else if (position == getItemCount() - 1) {
-
-                holder.tickLabel.setText("END");
+                // Hide the label and tick, and make an appropriate gap
+                holder.container.getLayoutParams().width = getCenterOffset() - (tickDistance / 2);
+                holder.tickLine.setVisibility(View.GONE);
+                holder.tickLabel.setVisibility(View.GONE);
 
             } else {
 
+                // Otherwise, reset the width of the container, and show items
+                holder.tickLine.setVisibility(View.VISIBLE);
+                holder.tickLabel.setVisibility(View.VISIBLE);
+                holder.container.getLayoutParams().width = tickDistance;
+
                 // Decide if this position is a large or small tick
-                double value = (this.smallTickPrecision * position) + minValue;
-                boolean large = value % this.largeTickPrecision == 0;
+                float value = (smallTickPrecision * position) + minimumValue;
+                boolean large = value % largeTickPrecision == 0;
 
-                holder.container.setPadding(tickDistance, 0, tickDistance, 0);
+                //holder.container.setPadding(tickDistance, 0, tickDistance, 0);
 
-                holder.tickLabel.setText(Double.toString(position * smallTickPrecision + minimumValue));
+                //holder.tickLabel.setText(Double.toString((position - 1) * smallTickPrecision + minimumValue));
                 holder.tickLabel.setSingleLine(true);
                 //holder.tickLabel.setText("");
-                holder.tickLabel.setTextColor(this.tickColor);
-                holder.tickLine.setBackgroundColor(this.tickColor);
+                holder.tickLabel.setTextColor(tickColor);
+                holder.tickLine.setBackgroundColor(tickColor);
 
                 if (large) {
                     // Use smaller top margin
@@ -242,8 +253,8 @@ public class FancySlider extends RecyclerView {
                 } else {
                     // Use larger top margin
                     holder.spacer.setVisibility(View.VISIBLE);
-                    holder.spacer.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, perc));
-                    holder.tickLine.setLayoutParams(new LinearLayout.LayoutParams(10, LayoutParams.MATCH_PARENT, 1-perc));
+                    holder.spacer.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, smallTickHeight));
+                    holder.tickLine.setLayoutParams(new LinearLayout.LayoutParams(10, LayoutParams.MATCH_PARENT, 1 - smallTickHeight));
                 }
 
             }
@@ -252,10 +263,8 @@ public class FancySlider extends RecyclerView {
 
         @Override
         public int getItemCount() {
-
-            // Return the number of division, plus two for edges
-            int count = (int) ((this.maxValue - this.minValue) / smallTickPrecision) + 2;
-            //Log.e("COUNT", "" + count);
+            // Return the number of divisions, plus two for edges
+            int count = (int) ((maximumValue - minimumValue) / smallTickPrecision) + 2;
             return count;
         }
     }

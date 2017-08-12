@@ -3,6 +3,7 @@
     <declare-styleable name="FancySlider">
         <attr name="smallTickPrecision" format="float" />
         <attr name="largeTickPrecision" format="float" />
+        <attr name="smallTickHeight" format="float" />
         <attr name="minimumValue" format="float" />
         <attr name="maximumValue" format="float" />
         <attr name="initialValue" format="float" />
