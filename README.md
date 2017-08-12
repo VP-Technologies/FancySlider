@@ -1,4 +1,4 @@
-# FancySlider
+# FancySlider [![](https://jitpack.io/v/VP-Technologies/FancySlider.svg)](https://jitpack.io/#VP-Technologies/FancySlider)
 
 FancySlider is an Android library for easily creating the kind of sliders you would see for weight and height within a fitness app. The library can be integrated into your application using Gradle, and is easily created using a custom view.
 
