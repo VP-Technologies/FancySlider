@@ -2,7 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:custom="http://schemas.android.com/apk/res-auto"
+    xmlns:slider="http://schemas.android.com/apk/res-auto"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -30,15 +30,23 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32px"
         android:layout_marginBottom="16px"
-        custom:srcCompat="@android:drawable/arrow_down_float"
+        slider:srcCompat="@android:drawable/arrow_down_float"
         android:layout_gravity="center"
         android:id="@+id/imageView2"/>
 
     <com.vptechnologies.vpfancyslider.FancySlider
+        android:id="@+id/sliderView"
         android:layout_width="match_parent"
-        custom:tickColor="@android:color/white"
         android:layout_height="64dp"
-        android:id="@+id/sliderView"/>
+        slider:tickColor="@android:color/white"
+        slider:minimumValue="1"
+        slider:maximumValue="100"
+        slider:smallTickPrecision="1"
+        slider:largeTickPrecision="5"
+        slider:smallTickHeight="0.6"
+        slider:tickDistance="40"
+        slider:tickLineWidth="7"
+        />
 
     <Button
         android:text="Go to 50"

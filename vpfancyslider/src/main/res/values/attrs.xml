@@ -8,6 +8,7 @@
         <attr name="maximumValue" format="float" />
         <attr name="initialValue" format="float" />
         <attr name="tickDistance" format="integer" />
+        <attr name="tickLineWidth" format="integer" />
         <attr name="tickColor" format="color" />
         <attr name="labeled" format="boolean" />
     </declare-styleable>

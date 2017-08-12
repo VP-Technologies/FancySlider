@@ -16,9 +16,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final FancySlider slider = (FancySlider) findViewById(R.id.sliderView);
-        slider.watchText((TextView) findViewById(R.id.valueTextView));
+        final TextView text = (TextView) findViewById(R.id.valueTextView);
+        final Button scrollButton = (Button) findViewById(R.id.button);
 
-        ((Button) findViewById(R.id.button)).setOnClickListener(new View.OnClickListener() {
+        slider.setOnValueChangedListener(new FancySlider.OnValueChangedListener() {
+            @Override
+            public void onValueChanged(float value) {
+                text.setText(Float.toString(value));
+            }
+        });
+
+        scrollButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 slider.scrollToValue(50, true);
