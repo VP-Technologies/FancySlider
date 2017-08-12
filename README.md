@@ -22,7 +22,7 @@ allprojects {
 2. Add the dependency
 ```groovy
 dependencies {
-        compile 'com.github.VP-Technologies:FancySlider:V0.1'
+        compile 'com.github.VP-Technologies:FancySlider:0.2-beta'
 }
 ```
 
